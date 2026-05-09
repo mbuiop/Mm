@@ -1,0 +1,67 @@
+name: ساخت APK وب‌ویو (WebView)
+
+on:
+  push:
+    branches: [ "main" ]
+  # امکان اجرای دستی از تب Actions
+  workflow_dispatch:
+
+env:
+  # نام پکیج پیشنهادی، می‌توانید آن را به دلخواه تغییر دهید
+  APP_PACKAGE_NAME: "com.yourcompany.your3dstudio"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 1. دریافت کدها (Checkout)
+        uses: actions/checkout@v4
+
+      - name: 2. راه‌اندازی Java (برای اندروید SDK)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: 3. راه‌اندازی Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: 4. آماده‌سازی فایل‌های پروژه اندروید
+        # در این مرحله، یک پروژه پایه اندروید که قرار است وب‌ویو باشد، ایجاد می‌کنیم.
+        # این کار به صورت دستی انجام می‌شود؛ اما for سادگی، از یک ریپو کمک می‌گیریم.
+        # شما می‌توانید فایل‌های نهایی را در ریپو خود ذخیره کنید.
+        run: |
+          # ایجاد پوشه‌های لازم
+          mkdir -p app/src/main/assets
+          mkdir -p app/src/main/res
+          
+          # کپی فایل HTML شما به پوشه assets
+          # فرض می‌کنیم فایل اصلی شما index.html در ریشه ریپو است
+          cp index.html app/src/main/assets/
+          
+          # دانلود یک فایل build.gradle ساده برای پروژه WebView (منبع: یک پروژه نمونه)
+          # توجه: در عمل، شما این فایل‌ها را به ریپو اضافه می‌کنید تا نیازی به دانلود نباشد.
+          # اما برای اولین تست، این روش جواب می‌دهد.
+
+      - name: 5. ساخت فایل APK نهایی
+        # این مرحله شامل کامپایل و ساخت APK می‌شود.
+        # از آنجایی که فایل‌های اندروید را به صورت کامل در ریپو نداریم،
+        # از یک Action آماده استفاده می‌کنیم که ورودی HTML می‌گیرد و خروجی APK می‌دهد.
+        # توجه: استفاده از Actions شخص ثالث نیاز به دقت دارد؛ این یک نمونه است.
+        uses: Narottam04/action-capacitor-android@main
+        with:
+          # نام پکیگن شما
+          package_name: ${{ env.APP_PACKAGE_NAME }}
+          # نام برنامه که روی گوشی نمایش داده می‌شود
+          app_name: "استودیو سه‌بعدی من"
+          # آیکون پیش‌فرض (در صورت نبود فایل آیکون)
+          icon_color: "#ff6b35"
+
+      - name: 6. آپلود فایل APK (به عنوان Artifact)
+        uses: actions/upload-artifact@v4
+        with:
+          name: my-3d-studio-app
+          path: |
+            *.apk
+            app-debug.apk
+          if-no-files-found: error
